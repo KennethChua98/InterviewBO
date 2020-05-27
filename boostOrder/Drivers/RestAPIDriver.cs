@@ -65,8 +65,6 @@ namespace boostOrder.Drivers
             //Ideas: Make response [] then deserial each index then store all data into one IList
         }
 
-
-
         public IList<Product> DeserializeLiveProduct(IRestResponse response)
         {
 
