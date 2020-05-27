@@ -38,7 +38,7 @@ namespace boostOrder.Drivers
         public IRestResponse EstCon()
         {
             var client = SetUpClient();
-            request = new RestRequest(requestPath, Method.GET);
+            request = new RestRequest(requestPath, Method.HEAD);
             var response = client.Get(request);
 
             if (response != null)
