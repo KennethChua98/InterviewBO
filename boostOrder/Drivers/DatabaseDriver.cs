@@ -1,135 +1,211 @@
-﻿using System;
+﻿using boostOrder.Model;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Data;
 using System.Data.SqlClient;
-using System.Drawing;
 using System.IO;
-using System.Security.Cryptography;
-using System.Text;
-using System.Windows.Controls;
+using System.Linq;
+using System.Net;
 using System.Windows.Media.Imaging;
+using Unity.Injection;
 
 namespace boostOrder.Drivers
 {
-    class DatabaseDriver
+
+    public class DatabaseDriver
     {
         SqlConnection conn;
         public SqlConnection EstDbConn()
         {
-
             SqlConnection conn = new SqlConnection();
-
-            string executable = System.Reflection.Assembly.GetExecutingAssembly().Location;
-            string path = (System.IO.Path.GetDirectoryName(executable));
-            string projectDirectory = path + @"\MallDB.mdf";
-            Console.WriteLine(projectDirectory);
-
+            string path = AppDomain.CurrentDomain.BaseDirectory;
+            string projectDirectory = path + "MallDB.mdf";
             conn.ConnectionString = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=" + projectDirectory + ";Integrated Security=True";
-            Console.WriteLine("DB Connection OK!");
-            conn.Open();
             return conn;
         }
 
-        public void getProductDB()
-        {
-            int i = 0;
+        public IList<Product> GetProductDB()
+        { 
             conn = EstDbConn();
-            /*
+            conn.Open();
+            string queryString = "SELECT * FROM dbo.Product";
+            SqlCommand cmd = new SqlCommand(queryString, conn);
+            SqlDataReader dataReader = cmd.ExecuteReader();
+            IList<Product> productList = new List<Product>();
+           
 
-           try
-           {
-               
-               /*
-               string queryString = "SELECT * FROM dbo.Product";
-               SqlCommand cmd = new SqlCommand(queryString, conn);
-               SqlDataReader dataReader = cmd.ExecuteReader();
+            int i = 0;
+            while (dataReader.Read())
+            {
+                Product product = new Product();
+                product.ProductCode = dataReader.GetString(0);
+                product.ProductName = dataReader.GetString(1);
+                product.ProductPrice = (double)dataReader.GetDecimal(2);
 
-               while (dataReader.Read())
-               {
-                   IList<Product> productList = new List<Product>();
-                   productList[i].ProductCode = dataReader.GetString(0);
-                   productList[i].ProductName = dataReader.GetString(1);
-                   productList[i].ProductPrice = dataReader.GetDouble(2);
+                var image = (byte[])dataReader.GetSqlBinary(3);
 
-                   var image = (byte[])dataReader.GetValue(3);
-                   productList[i].ProductImage = ConvertByteToImage(image);
-                   productList[i].Uom = dataReader.GetString(4);
-                   i++;
-               }
-           }
-           catch(Exception ex) {
-               Console.WriteLine(ex);
+                product.ProductImage = ConvertByteToImage(image);
 
-           }
-           finally { conn.Close(); }
-               */
-
+                product.Uom = dataReader.GetString(4);
+                i ++;
+                productList.Add(product);
+            }
+            conn.Close();
+            return productList;
+           
         }
 
-        public void StoreProduct(IList<Product> productsList)
+        public IList<Cart> GetCartDB()
         {
             conn = EstDbConn();
+            conn.Open();
+            string queryString = "SELECT c.ProductCode, p.ProductName, p.ProductPrice, c.Qty FROM dbo.Cart c, dbo.Product p where c.ProductCode=p.ProductCode;";
+            SqlCommand cmd = new SqlCommand(queryString, conn);
+            SqlDataReader dataReader = cmd.ExecuteReader();
+
+            IList<Cart> cartList = new List<Cart>();
+
+
+            while (dataReader.Read())
+            {
+                Cart cartItem = new Cart();
+                cartItem.Product = new Product();
+                cartItem.Product.ProductCode = dataReader.GetString(0);
+                cartItem.Product.ProductName = dataReader.GetString(1);
+                cartItem.Product.ProductPrice = (double)dataReader.GetDecimal(2);
+                cartItem.Product.Qty = dataReader.GetInt32(3);
+                cartList.Add(cartItem);
+            }
+            conn.Close();
+            return cartList;
+           
+        }
+
+        public void StoreProductDB(IList<Product> productsList)
+        {
+            conn = EstDbConn();
+            conn.Open();
             try
             {
-                int i = 0;
-                
-
-                //Console.WriteLine(bytes[0].ToString());
-
+                int i;
+ 
                 for (i = 0; i < productsList.Count; i++)
                 {
-
-                    string queryString = "Insert into dbo.Product(ProductCode,ProductName,ProductPrice,ProductImage,Uom) Values (@ProductCode,@ProductName,@ProductPrice,@ProductImage,@Uom);";
+                    
+                    string queryString = "Insert into dbo.Product Values(@ProductCode,@ProductName,@ProductPrice,@ProductImage,@Uom);";
                     SqlCommand cmd = new SqlCommand(queryString, conn);
                     cmd.Parameters.AddWithValue("@ProductCode", productsList[i].ProductCode);
                     cmd.Parameters.AddWithValue("@ProductName", productsList[i].ProductName);
                     cmd.Parameters.AddWithValue("@ProductPrice", productsList[i].ProductPrice);
-                    var bytes = convertImageToByte(productsList[0].ProductImage);
-                    cmd.Parameters.AddWithValue("@ProductImage", bytes);
-                    cmd.Parameters.AddWithValue("@Uom", productsList[i].Uom);
+                    cmd.Parameters.AddWithValue("@ProductImage", ConvertImageToByte(productsList[i].ImagePath));
+                    cmd.Parameters.AddWithValue("Uom", productsList[i].Uom);
                     cmd.ExecuteNonQuery();
-                    i++;
                 }
 
             }
             catch (Exception ex)
             {
-
                 Console.WriteLine("storeError:" + ex);
-
-
             }
+            conn.Close();
+        }
 
+        public void StoreProductCart(Product product)
+        {
+            int i, addedQty=0;
+            Boolean existed=false;
+            var cartList = GetCartDB();
+
+            if(cartList.Count>0)
+            {
+                for (i = 0; i < cartList.Count; i++)
+                {
+                    if (cartList[i].Product.ProductCode.Equals(product.ProductCode))
+                    {
+                        existed = true;
+                        addedQty= cartList[i].Product.Qty+product.Qty;
+                    }
+                }
+                if (existed == false)
+                {
+                    StoreProdCartStmReuse(product);
+                }
+                else
+                {
+                    UpdateCrtProdExisted(product, addedQty);
+                }
+            }
+            else
+            {
+                StoreProdCartStmReuse(product);
+            }
+        }
+
+        private void StoreProdCartStmReuse(Product product)
+        {
+            conn = EstDbConn();
+            conn.Open();
+            string queryString = "Insert into dbo.Cart Values(@ProductCode, @Qty);";
+            SqlCommand cmd = new SqlCommand(queryString, conn);
+            cmd.Parameters.AddWithValue("@ProductCode", product.ProductCode);
+            cmd.Parameters.AddWithValue("@Qty", product.Qty);
+            cmd.ExecuteNonQuery();
+            conn.Close();
+        }
+
+        public void UpdateCrtProdExisted(Product product, int addedQty)
+        {
+            conn = EstDbConn();
+            conn.Open();
+            string queryString = "Update dbo.Cart set Qty=@Qty where ProductCode=@ProductCode;";
+            SqlCommand cmd = new SqlCommand(queryString, conn);
+            cmd.Parameters.AddWithValue("@ProductCode", product.ProductCode);
+            cmd.Parameters.AddWithValue("@Qty", addedQty);
+            cmd.ExecuteNonQuery();
             conn.Close();
 
+        }
 
+        public void FreeCartStorage()
+        {
+            conn = EstDbConn();
+            conn.Open();
+            string queryString = "Delete FROM dbo.Cart";
+            SqlCommand cmd = new SqlCommand(queryString, conn);
+            cmd.ExecuteReader();
+            conn.Close();
 
         }
 
-        public BitmapImage ConvertByteToImage(Byte[] image)
+        public void FreeCatalogStorage()
         {
-            MemoryStream stream = new MemoryStream(image);
-            BitmapImage bitImage = new BitmapImage();
-            bitImage.BeginInit();
-            stream.Seek(0, SeekOrigin.Begin);
-            bitImage.StreamSource = stream;
-            bitImage.EndInit();
-            bitImage.EndInit();
-            return bitImage;
+            conn = EstDbConn();
+            conn.Open();
+            string queryString = "Delete FROM dbo.Product";
+            SqlCommand cmd = new SqlCommand(queryString, conn);
+            cmd.ExecuteReader();
+            conn.Close();
+
         }
 
-        public static Byte[] convertImageToByte(BitmapImage image)
+        public BitmapImage ConvertByteToImage(Byte[] array)
         {
+            using var ms = new System.IO.MemoryStream(array);
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad; // here
+            image.StreamSource = ms;
+            image.EndInit();
+            return image;
+        }
 
-            Byte[] data;
-            JpegBitmapEncoder encoder = new JpegBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(image));
-            using (MemoryStream ms = new MemoryStream())
-            {
-                encoder.Save(ms);
-                data = ms.ToArray();
-            }
+        public static Byte[] ConvertImageToByte(string imagePath)
+        {
+            using WebClient client = new WebClient();
+            var Byte = client.DownloadData(imagePath);
+            return Byte;
 
-            return data;
         }
     }
 }

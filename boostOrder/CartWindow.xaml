@@ -1,14 +1,14 @@
-﻿<Window x:Class="boostOrder.MainWindow"
+﻿<Window x:Class="boostOrder.CartWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:boostOrder" xmlns:views="clr-namespace:boostOrder.View"
         mc:Ignorable="d"
-        Title="BoostOrder Interview Answers" 
-        Height="800" Width="1100"
-        Style="{StaticResource windowStyle}">
-    <DockPanel>
-        <views:ProductView x:Name ="ProductViewControl" Loaded = "ProductViewControl_Loaded"/>
-    </DockPanel>
+        Title="CartWindow" Height="800" Width="1100"
+       >
+    
+    <Grid>
+        <views:CartView x:Name ="CartViewControl" Loaded = "CartViewControl_Loaded"/>
+    </Grid>
 </Window>

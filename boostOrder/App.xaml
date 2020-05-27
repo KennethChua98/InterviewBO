@@ -1,7 +1,6 @@
 ﻿<Application x:Class="boostOrder.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:boostOrder"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:boostOrder.View"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <Style x:Key="windowStyle" TargetType="Window">
@@ -18,7 +17,7 @@
                                 <Grid.RowDefinitions>
                                     <RowDefinition/>
                                 </Grid.RowDefinitions>
-                                <Label Grid.Column="0" Grid.Row="0" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="16" FontWeight="Bold" Width="auto" Margin="15,0,0,0">Fresh &amp; Healthy</Label>
+                                <Label Grid.Column="0" Grid.Row="0" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="16" FontWeight="Bold" Width="auto" Margin="15,0,0,0">Fresh &amp; Goods</Label>
                                 <Label Grid.Column="1" Grid.Row="0" Width="auto"/>
                                 <Grid  Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="2"  Width="auto" VerticalAlignment="Stretch" Margin="0,0,50,0">
                                     <Grid.ColumnDefinitions>
@@ -36,7 +35,9 @@
                                     <Button Grid.Column="1" Grid.Row="0" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{x:Null}" BorderBrush="{x:Null}" Height="37">
                                         <Image Source="Resources/horizontal.png"  RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.EdgeMode="Aliased" />
                                     </Button>
-                                    <TextBlock Name="totalPrice" Grid.Column="2" Grid.Row="0" Foreground="White" HorizontalAlignment="Center" FontSize="16" Margin="0,20,0,0" Height="37" VerticalAlignment="Top">RM 0.00</TextBlock>
+
+                                        <TextBlock x:Name="latestTotal" Grid.Column="2" Grid.Row="0" Foreground="White" HorizontalAlignment="Center" FontSize="16" Margin="0,20,0,0" Height="37" VerticalAlignment="Top">RM 0.00</TextBlock>
+
                                     <Button Grid.Column="3" Grid.Row="0" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{x:Null}" BorderBrush="{x:Null}" Height="37">
                                         <Image Source="Resources/menu.png"  RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.EdgeMode="Aliased"/>
                                     </Button>

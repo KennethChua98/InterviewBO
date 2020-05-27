@@ -1,0 +1,1 @@
+﻿SELECT c.ProductCode, p.ProductName, p.ProductPrice, c.Qty FROM dbo.Cart c, dbo.Product p where c.ProductCode=p.ProductCode;

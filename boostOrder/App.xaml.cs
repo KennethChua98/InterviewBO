@@ -1,13 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
+﻿using boostOrder.View;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace boostOrder
 {
@@ -17,18 +9,12 @@ namespace boostOrder
     /// </summary>
     public partial class App : Application
     {
-        Cart cart = new Cart();
-        public App()
+        protected override void OnStartup(StartupEventArgs e)
         {
+            SplashScreen splash= new SplashScreen("Resources/loading.png");
+            splash.Show(autoClose: true, topMost: true);
         }
-
-
     }
-
-    
-
-
-
 
 }
 
